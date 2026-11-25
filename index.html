@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แบบประเมินโรควิตกกังวล (GAD-7)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* สัดส่วนสี 60 / 30 / 10 : ครีม / ชมพู / น้ำตาล */
+  :root {
+    --cream: #fcf7d9;   /* 60% พื้นหลังหลัก */
+    --pink:  #f6d8d6;   /* 30% การ์ด / พื้นที่รอง */
+    --brown: #604734;   /* 10% จุดเด่น: หัวข้อ ปุ่ม ตัวเลือกที่เลือก */
+    --brown-line: rgba(96, 71, 52, .22);
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--brown);
+    line-height: 1.7;
+    font-size: 17px;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 64px; }
+  .hidden { display: none !important; }
+
+  header { text-align: center; margin-bottom: 22px; }
+  header h1 {
+    margin: 0 0 6px;
+    font-size: clamp(1.5rem, 4.5vw, 2rem);
+    font-weight: 700;
+  }
+  header .sub { margin: 0; opacity: .85; font-size: .95rem; }
+
+  .notice {
+    background: var(--pink);
+    border-left: 6px solid var(--brown);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: .92rem;
+    margin-bottom: 22px;
+  }
+
+  /* แถบความคืบหน้า */
+  .progress-box { margin-bottom: 20px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: .9rem; font-weight: 600; margin-bottom: 6px; }
+  .progress-track { height: 10px; background: var(--pink); border-radius: 99px; overflow: hidden; }
+  .progress-bar { height: 100%; width: 0; background: var(--brown); border-radius: 99px; transition: width .35s ease; }
+
+  /* การ์ดคำถาม */
+  .q-card {
+    background: var(--pink);
+    border-radius: var(--radius);
+    padding: 20px 20px 18px;
+    margin-bottom: 16px;
+    border: 2px solid transparent;
+    transition: border-color .2s;
+  }
+  .q-card.missing { border-color: var(--brown); animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-5px);} 75% { transform: translateX(5px);} }
+
+  .q-title { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 14px; font-weight: 600; }
+  .q-num {
+    flex: none;
+    min-width: 34px; height: 34px;
+    padding: 0 6px;
+    display: grid; place-items: center;
+    background: var(--brown); color: var(--cream);
+    border-radius: 99px;
+    font-size: .95rem; font-weight: 700;
+  }
+
+  /* ตัวเลือกทั้ง 4 อยู่แถวเดียวกัน ความกว้างและความสูงเท่ากัน */
+  .options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .opt { position: relative; display: flex; }
+  .opt input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .opt span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 54px;
+    text-align: center;
+    line-height: 1.3;
+    padding: 8px 4px;
+    border-radius: 12px;
+    background: var(--cream);
+    border: 2px solid var(--brown-line);
+    font-weight: 500;
+    font-size: .92rem;
+    transition: all .15s;
+  }
+  .opt:hover span { border-color: var(--brown); }
+  .opt input:focus-visible + span { outline: 3px solid var(--brown); outline-offset: 2px; }
+  .opt input:checked + span {
+    background: var(--brown);
+    color: var(--cream);
+    border-color: var(--brown);
+    font-weight: 700;
+  }
+
+  /* ปุ่ม */
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  button {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 13px 26px;
+    border-radius: 14px;
+    cursor: pointer;
+    border: 2px solid var(--brown);
+    transition: transform .1s, opacity .2s;
+  }
+  button:active { transform: scale(.97); }
+  .btn-primary { background: var(--brown); color: var(--cream); flex: 2 1 220px; }
+  .btn-primary:hover { opacity: .9; }
+  .btn-ghost { background: transparent; color: var(--brown); flex: 1 1 140px; }
+  .btn-ghost:hover { background: var(--pink); }
+
+  .error-msg { display: none; margin-top: 14px; font-weight: 600; background: var(--pink); border: 2px solid var(--brown); border-radius: 12px; padding: 10px 14px; }
+  .error-msg.show { display: block; }
+
+  /* ผลการประเมิน (สีชมพูเป็นหลัก น้ำตาลเป็นสีเน้น) */
+  .score-card {
+    background: var(--pink);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    border: 3px solid var(--brown);
+  }
+  .score-card .score-label { font-size: .95rem; opacity: .85; margin: 0; }
+  .score-card .score-num { font-size: 4rem; font-weight: 700; line-height: 1.1; margin: 4px 0; }
+  .score-card .score-max { font-size: 1.1rem; font-weight: 500; opacity: .75; }
+  .score-card .level {
+    display: inline-block;
+    background: var(--brown); color: var(--cream);
+    padding: 8px 20px; border-radius: 99px;
+    font-weight: 700; font-size: 1.1rem; margin: 6px 0 12px;
+  }
+  .score-card .advice { margin: 0; font-size: .98rem; }
+
+  .help-box {
+    margin-top: 16px;
+    background: var(--pink);
+    border: 2px solid var(--brown-line);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: .95rem;
+  }
+  .help-box.emphasis { border: 3px solid var(--brown); }
+  .help-box strong { font-size: 1.05rem; }
+  .help-box ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .scale { margin-top: 16px; font-size: .88rem; opacity: .9; }
+  .scale ul { margin: 4px 0 0; padding-left: 20px; }
+
+  footer { text-align: center; margin-top: 40px; font-size: .85rem; opacity: .75; }
+
+  @media (max-width: 480px) {
+    body { font-size: 16px; }
+    .q-card { padding: 16px 12px; }
+    .options { gap: 6px; }
+    .opt span { font-size: .78rem; padding: 6px 2px; min-height: 58px; border-radius: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>แบบประเมินโรควิตกกังวล (GAD-7)</h1>
+    <p class="sub" id="subText">ในช่วง 2 สัปดาห์ที่ผ่านมา ท่านมีอาการเหล่านี้มากน้อยเพียงใด</p>
+  </header>
+
+  <!-- ===== มุมมองแบบฟอร์ม ===== -->
+  <div id="formView">
+    <div class="notice">
+      แบบประเมินนี้อ้างอิงจาก Bangkok Mental Health Hospital เป็นเพียงเครื่องมือคัดกรองเบื้องต้น ไม่ใช่การวินิจฉัยโรค
+      หากมีอาการรบกวนชีวิตประจำวัน ควรปรึกษาแพทย์หรือผู้เชี่ยวชาญด้านสุขภาพจิต
+      หากรู้สึกไม่ปลอดภัยหรือกำลังตกอยู่ในภาวะวิกฤต โปรดติดต่อ <strong>สายด่วนสุขภาพจิต 1323</strong>
+      หรือ <strong>1669</strong> (ฉุกเฉิน) ได้ตลอด 24 ชั่วโมง
+    </div>
+
+    <div class="progress-box">
+      <div class="progress-label"><span>ความคืบหน้า</span><span id="progressText">0 / 7</span></div>
+      <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <form id="form" novalidate>
+      <div id="questions"></div>
+      <div class="error-msg" id="errorMsg">กรุณาตอบคำถามให้ครบทุกข้อ (ข้อที่ยังไม่ได้ตอบถูกไฮไลต์ไว้)</div>
+      <div class="actions">
+        <button type="button" class="btn-primary" id="submitBtn">ดูผลการประเมิน</button>
+        <button type="button" class="btn-ghost" id="resetBtn">ล้างคำตอบ</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===== มุมมองผลการประเมิน ===== -->
+  <div id="resultView" class="hidden">
+    <div class="score-card">
+      <p class="score-label">คะแนนรวม</p>
+      <div class="score-num"><span id="totalScore">0</span> <span class="score-max">/ 21</span></div>
+      <div class="level" id="levelText"></div>
+      <p class="advice" id="adviceText"></p>
+    </div>
+
+    <div class="help-box" id="helpBox"></div>
+
+    <div class="scale">
+      เกณฑ์การแปลผล
+      <ul>
+        <li>0–4 คะแนน : เป็นโรควิตกกังวลน้อยมากหรือไม่มีความเสี่ยงเป็นโรควิตกกังวล</li>
+        <li>5–7 คะแนน : เป็นโรควิตกกังวลเล็กน้อย</li>
+        <li>8–9 คะแนน : เป็นโรควิตกกังวลปานกลาง</li>
+        <li>10 คะแนนขึ้นไป : เป็นโรควิตกกังวลรุนแรง</li>
+      </ul>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-primary" id="newBtn">ประเมินใหม่</button>
+    </div>
+  </div>
+
+  <footer>แบบประเมิน GAD-7 &middot; ใช้เพื่อการคัดกรองเบื้องต้นเท่านั้น</footer>
+</div>
+
+<script>
+  /* ---------- ข้อมูลคำถามและคะแนน ---------- */
+  var CHOICES = [
+    { label: "ไม่เลย", score: 0 },
+    { label: "เล็กน้อย", score: 1 },
+    { label: "ปานกลาง", score: 2 },
+    { label: "อย่างที่สุด", score: 3 }
+  ];
+
+  var TEXTS = [
+    "ท่านรู้สึกตึงเครียด วิตกกังวล หรือกระวนกระวาย",
+    "ท่านไม่สามารถหยุด หรือควบคุมความกังวลได้",
+    "ท่านกังวลมากเกินไปในเรื่องต่างๆ",
+    "ท่านทำตัวให้ผ่อนคลายได้ยาก",
+    "ท่านรู้สึกกระสับกระส่ายจนไม่สามารถนั่งนิ่งๆได้",
+    "ท่านกลายเป็นคนขี้รำคาญ หรือหงุดหงิดง่าย",
+    "ท่านรู้สึกกลัว เหมือนกับว่าจะมีอะไรร้ายๆเกิดขึ้น"
+  ];
+
+  var QUESTIONS = TEXTS.map(function (t, i) {
+    return { id: "q" + (i + 1), no: String(i + 1), text: t };
+  });
+
+  /* เกณฑ์ตามที่กำหนด: 0-4, 5-7, 8-9, 10 ขึ้นไป (คะแนนเต็ม 21) */
+  var LEVELS = {
+    minimal: {
+      label: "เป็นโรควิตกกังวลน้อยมากหรือไม่มีความเสี่ยงเป็นโรควิตกกังวล",
+      advice: "จากการประเมินนี้ไม่พบหรือพบอาการวิตกกังวลน้อยมาก ควรดูแลสุขภาพกายและใจอย่างต่อเนื่อง และประเมินซ้ำหากมีอาการเปลี่ยนแปลง"
+    },
+    mild: {
+      label: "เป็นโรควิตกกังวลเล็กน้อย",
+      advice: "มีอาการวิตกกังวลในระดับเล็กน้อย ควรดูแลตนเอง พักผ่อนให้เพียงพอ ออกกำลังกาย ฝึกผ่อนคลาย และติดตามอาการ หากไม่ดีขึ้นควรปรึกษาบุคลากรสุขภาพ"
+    },
+    moderate: {
+      label: "เป็นโรควิตกกังวลปานกลาง",
+      advice: "มีอาการวิตกกังวลในระดับปานกลาง ควรปรึกษาแพทย์หรือผู้เชี่ยวชาญด้านสุขภาพจิตเพื่อประเมินและรับการดูแลที่เหมาะสม"
+    },
+    severe: {
+      label: "เป็นโรควิตกกังวลรุนแรง",
+      advice: "มีอาการวิตกกังวลในระดับรุนแรง ควรพบแพทย์หรือจิตแพทย์โดยเร็ว เพื่อประเมินและรับการรักษา ผลนี้ไม่ใช่การวินิจฉัย"
+    }
+  };
+
+  /* ---------- ตัวช่วย ---------- */
+  function $(id) { return document.getElementById(id); }
+
+  function optionsHTML(name) {
+    return CHOICES.map(function (o, i) {
+      return '<label class="opt">' +
+               '<input type="radio" name="' + name + '" value="' + i + '">' +
+               '<span>' + o.label + '</span>' +
+             '</label>';
+    }).join("");
+  }
+
+  function renderQuestions() {
+    $("questions").innerHTML = QUESTIONS.map(function (q) {
+      return '<div class="q-card" id="card-' + q.id + '">' +
+               '<p class="q-title"><span class="q-num">' + q.no + '</span><span>' + q.text + '</span></p>' +
+               '<div class="options">' + optionsHTML(q.id) + '</div>' +
+             '</div>';
+    }).join("");
+  }
+
+  /* ---------- อ่านค่าคำตอบ ---------- */
+  function getChoice(id) {
+    var el = document.querySelector('input[name="' + id + '"]:checked');
+    return el ? Number(el.value) : null;
+  }
+
+  function updateProgress() {
+    var done = 0;
+    QUESTIONS.forEach(function (q) { if (getChoice(q.id) !== null) done++; });
+    $("progressText").textContent = done + " / " + QUESTIONS.length;
+    $("progressBar").style.width = ((done / QUESTIONS.length) * 100) + "%";
+  }
+
+  /* ---------- ตรวจความครบถ้วน ---------- */
+  function validate() {
+    document.querySelectorAll(".missing").forEach(function (el) { el.classList.remove("missing"); });
+    var missing = [];
+    QUESTIONS.forEach(function (q) {
+      if (getChoice(q.id) === null) missing.push("card-" + q.id);
+    });
+    missing.forEach(function (id) { $(id).classList.add("missing"); });
+    return missing;
+  }
+
+  /* ---------- คำนวณคะแนน ---------- */
+  function calculate() {
+    var total = 0;
+    QUESTIONS.forEach(function (q) {
+      total += CHOICES[getChoice(q.id)].score;
+    });
+
+    var key = "minimal";
+    if (total >= 10) key = "severe";
+    else if (total >= 8) key = "moderate";
+    else if (total >= 5) key = "mild";
+
+    return { total: total, key: key, level: LEVELS[key] };
+  }
+
+  /* ---------- แสดงผล ---------- */
+  function showResult(r) {
+    $("totalScore").textContent = r.total;
+    $("levelText").textContent = r.level.label;
+    $("adviceText").textContent = r.level.advice;
+
+    var emphasis = r.key === "severe";
+    var help = $("helpBox");
+    help.className = "help-box" + (emphasis ? " emphasis" : "");
+    help.innerHTML =
+      "<strong>" + (emphasis ? "ควรขอความช่วยเหลือ" : "ช่องทางขอความช่วยเหลือ") + "</strong>" +
+      "<ul>" +
+        (r.key === "moderate" || emphasis ? "<li>ควรพบแพทย์หรือผู้เชี่ยวชาญด้านสุขภาพจิตเพื่อประเมินเพิ่มเติม</li>" : "") +
+        "<li>สายด่วนสุขภาพจิต <strong>1323</strong> (โทรฟรี 24 ชั่วโมง)</li>" +
+        "<li>บริการการแพทย์ฉุกเฉิน <strong>1669</strong> กรณีฉุกเฉิน</li>" +
+      "</ul>";
+
+    $("formView").classList.add("hidden");
+    $("resultView").classList.remove("hidden");
+    $("subText").textContent = "ผลการประเมิน";
+    window.scrollTo(0, 0);
+  }
+
+  function showForm() {
+    $("resultView").classList.add("hidden");
+    $("formView").classList.remove("hidden");
+    $("subText").textContent = "ในช่วง 2 สัปดาห์ที่ผ่านมา ท่านมีอาการเหล่านี้มากน้อยเพียงใด";
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- เหตุการณ์ ---------- */
+  function onSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var err = $("errorMsg");
+    try {
+      var missing = validate();
+      if (missing.length) {
+        err.textContent = "กรุณาตอบคำถามให้ครบทุกข้อ (ข้อที่ยังไม่ได้ตอบถูกไฮไลต์ไว้)";
+        err.classList.add("show");
+        $(missing[0]).scrollIntoView({ behavior: "smooth", block: "center" });
+        return false;
+      }
+      err.classList.remove("show");
+      showResult(calculate());
+    } catch (ex) {
+      err.textContent = "เกิดข้อผิดพลาดในการคำนวณ: " + ex.message;
+      err.classList.add("show");
+    }
+    return false;
+  }
+
+  /* ไม่พึ่งการ submit ของฟอร์ม เพราะบางหน้าพรีวิวบล็อกไว้ */
+  $("submitBtn").addEventListener("click", onSubmit);
+  $("form").addEventListener("submit", onSubmit);
+
+  $("form").addEventListener("change", function () {
+    updateProgress();
+    $("errorMsg").classList.remove("show");
+  });
+
+  function resetAll() {
+    $("form").reset();
+    document.querySelectorAll(".missing").forEach(function (el) { el.classList.remove("missing"); });
+    $("errorMsg").classList.remove("show");
+    updateProgress();
+  }
+
+  $("resetBtn").addEventListener("click", function () {
+    resetAll();
+    window.scrollTo(0, 0);
+  });
+
+  $("newBtn").addEventListener("click", function () {
+    resetAll();
+    showForm();
+  });
+
+  /* เริ่มต้น */
+  renderQuestions();
+  updateProgress();
+</script>
+</body>
+</html>
